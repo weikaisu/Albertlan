@@ -40,23 +40,27 @@ int main(int argc, char const *argv[])
     }
 
     // Send OPEN message
-    send(sock , msg_open.c_str() , msg_open.size() , 0 ); std::cout << "OPEN" << std::endl;
+    send(sock , msg_open.c_str() , msg_open.size() , 0 );
+    std::cout << "OPEN" << std::endl;
     valread = recv(sock, rcv_msg, sizeof(rcv_msg), 0);
     
     // Send INFR message
-    send(sock , msg_infer.c_str() , msg_infer.size() , 0 ); std::cout << "INFER" << std::endl;
-    valread = read( sock , keypoints, sizeof(keypoints));
-    if(valread<=0) {
-        std::cout << "ERROR : " << valread << std::endl;
-        exit(0);
+    for(int times=1 ;times<=2; times++) {
+        send(sock , msg_infer.c_str() , msg_infer.size() , 0 ); 
+        std::cout << "---------------------------------INFER(" << times << ")" << std::endl;
+        valread = read( sock , keypoints, sizeof(keypoints));
+        if(valread<=0) {
+            std::cout << "ERROR : " << valread << std::endl;
+            exit(0);
+        }
+        //for(int i=0; i<110; i++)
+        for(int i=0; i<51; i++)
+            std::cout<< i << ":" << keypoints[i] << std::endl;
     }
     
-    //for(int i=0; i<110; i++)
-    for(int i=0; i<51; i++)
-        std::cout<< i << ":" << keypoints[i] << std::endl;
-    
     // Send CLSE message
-    send(sock , msg_close.c_str() , msg_close.size() , 0 ); std::cout << "CLOSE" << std::endl;
+    send(sock , msg_close.c_str() , msg_close.size() , 0 );
+    std::cout << "CLOSE" << std::endl;
     valread = recv(sock, rcv_msg, sizeof(rcv_msg), 0);
 
     //std::cout << __LINE__ << std::endl;
