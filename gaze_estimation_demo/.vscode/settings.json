@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "/Users/steve/Workspace/C++STL/libcxx/include/*": "cpp",
+        "/Users/steve/Workspace/C++STL/libstdc++-v3/include/std/*": "cpp",
+        "/Users/steve/Workspace/C++STL/stl/inc/*": "cpp",
+        "stdexcept": "cpp"
+    }
+}
