@@ -246,6 +246,49 @@ int main_ori(int argc, char *argv[]) {
 #define PORT 8080
 
 int main(int argc, char *argv[]) {
+
+    int server_fd, new_socket, valread;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    std::string msg_open = "OPEN";
+    std::string msg_infer = "INFR";
+    std::string msg_close = "CLSE";
+    std::string msg_down = "DOWN";
+    std::string msg_fail = "FAIL";
+    char rcv_msg[4];
+    ResultsData res_data;
+
+    // Creating socket file descriptor
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attaching socket to the port 8080
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons( PORT );
+    // Forcefully attaching socket to the port 8080
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
+        perror("accept");
+        exit(EXIT_FAILURE);
+    }
+
     try {
         std::cout << "InferenceEngine: " << GetInferenceEngineVersion() << std::endl;
 
@@ -324,51 +367,6 @@ int main(int argc, char *argv[]) {
         Presenter presenter(FLAGS_u, static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT)) - graphSize.height - 10, graphSize);
         auto tIterationBegins = cv::getTickCount();
 
-
-
-        int server_fd, new_socket, valread;
-        struct sockaddr_in address;
-        int opt = 1;
-        int addrlen = sizeof(address);
-        std::string msg_open = "OPEN";
-        std::string msg_infer = "INFR";
-        std::string msg_close = "CLSE";
-        std::string msg_down = "DOWN";
-        std::string msg_fail = "FAIL";
-        char rcv_msg[4];
-        ResultsData res_data;
-
-        // Creating socket file descriptor
-        if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-            perror("socket failed");
-            exit(EXIT_FAILURE);
-        }
-
-        // Forcefully attaching socket to the port 8080
-        if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-            perror("setsockopt");
-            exit(EXIT_FAILURE);
-        }
-        address.sin_family = AF_INET;
-        address.sin_addr.s_addr = INADDR_ANY;
-        address.sin_port = htons( PORT );
-
-        // Forcefully attaching socket to the port 8080
-        if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0) {
-            perror("bind failed");
-            exit(EXIT_FAILURE);
-        }
-
-        if (listen(server_fd, 3) < 0) {
-            perror("listen");
-            exit(EXIT_FAILURE);
-        }
-
-        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
-            perror("accept");
-            exit(EXIT_FAILURE);
-        }
-
         std::cout << "Waiting Message" << std::endl << std::flush;
         while ((valread = recv(new_socket, rcv_msg, sizeof(rcv_msg), 0)) >0 ) {
             if (!strncmp(rcv_msg, msg_open.c_str(), 4)) {
@@ -446,6 +444,7 @@ int main(int argc, char *argv[]) {
                     presenter.handleKey(key);
                 
                 std::cout << presenter.reportMeans() << '\n';
+                send(new_socket , msg_down.c_str() , msg_down.size() , 0 );
                 send(new_socket , &res_data.keypoints , sizeof(res_data.keypoints) , 0 ); }
             
             
@@ -462,10 +461,12 @@ int main(int argc, char *argv[]) {
     }
     catch (const std::exception& error) {
         slog::err << error.what() << slog::endl;
+        send(new_socket , msg_fail.c_str() , msg_fail.size() , 0 );
         return 1;
     }
     catch (...) {
         slog::err << "Unknown/internal exception happened." << slog::endl;
+        send(new_socket , msg_fail.c_str() , msg_fail.size() , 0 );
         return 1;
     }
     slog::info << "Execution successful" << slog::endl;
