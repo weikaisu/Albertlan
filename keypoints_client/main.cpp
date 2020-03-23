@@ -43,10 +43,19 @@ int main(int argc, char const *argv[])
     send(sock , msg_open.c_str() , msg_open.size() , 0 );
     std::cout << "OPEN" << std::endl;
     valread = recv(sock, rcv_msg, sizeof(rcv_msg), 0);
+    if (!strncmp(rcv_msg, msg_fail.c_str(), 4)) {
+        std::cout << "ERROR" << std::endl;
+        return 0;
+    }
     
     // Send INFR message
     for(int times=1 ;times<=2; times++) {
-        send(sock , msg_infer.c_str() , msg_infer.size() , 0 ); 
+        send(sock , msg_infer.c_str() , msg_infer.size() , 0 );
+        valread = recv(sock, rcv_msg, sizeof(rcv_msg), 0);
+        if (!strncmp(rcv_msg, msg_fail.c_str(), 4)) {
+            std::cout << "ERROR" << std::endl;
+            return 0;
+        }
         std::cout << "---------------------------------INFER(" << times << ")" << std::endl;
         valread = read( sock , keypoints, sizeof(keypoints));
         if(valread<=0) {
