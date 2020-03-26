@@ -376,22 +376,44 @@ int main(int argc, char *argv[]) {
             
             else if (!strncmp(rcv_msg, msg_infer.c_str(), 4)) {
                 std::cout << "INFER" << std::endl;
+                
+                #if 0
                 cv::Mat frame;
                 if (!cap.read(frame)) {
                     throw std::logic_error("Failed to get frame from cv::VideoCapture");
                 }
+                #else
+                cv::Mat frame = cv::Mat::zeros(720, 1280, CV_8UC3);
+                int imgSize = frame.total()*frame.elemSize(); //std::cout << imgSize << std::endl;
+                uchar sockData[imgSize];
+
+                auto tInferenceBegins = cv::getTickCount();
+                for(int i=0;i<imgSize;i+=valread)
+                    if ((valread=recv(new_socket, sockData+i, imgSize-i,0))==-1) std::cout << "recv failed" << std::endl;
+
+                int ptr=0;
+
+                for(int i=0;i<frame.rows;++i)
+                    for(int j=0;j<frame.cols;++j) {
+                        frame.at<cv::Vec3b>(i,j) = cv::Vec3b(sockData[ptr+0],sockData[ptr+1],sockData[ptr+2]);
+                        ptr+=3;
+                    }
+                auto tInferenceEnds = cv::getTickCount();
+                std::cout << (tInferenceEnds - tInferenceBegins) * 1000. / cv::getTickFrequency() << std::endl;
+                #endif
+
                 if (flipImage)
                     cv::flip(frame, frame, 1);
 
                 // Infer results
-                auto tInferenceBegins = cv::getTickCount();
+                tInferenceBegins = cv::getTickCount();
                 auto inferenceResults = faceDetector.detect(frame);
                 for (auto& inferenceResult : inferenceResults) {
                     for (auto estimator : estimators) {
                         estimator->estimate(frame, inferenceResult);
                     }
                 }
-                auto tInferenceEnds = cv::getTickCount();
+                tInferenceEnds = cv::getTickCount();
 
                 // Measure FPS
                 auto tIterationEnds = cv::getTickCount();
