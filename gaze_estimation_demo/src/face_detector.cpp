@@ -83,6 +83,8 @@ std::vector<FaceInferenceResults> FaceDetector::detect(const cv::Mat& image) {
     ieWrapper.getOutputBlob(outputBlobName, rawDetectionResults);
 
     FaceInferenceResults tmp;
+    tmp.faceDetectionConfidence = 0.0;
+    float min_dist = static_cast<float>(image.cols), center_x = min_dist/2;
 
     cv::Size imageSize(image.size());
     cv::Rect imageRect(0, 0, image.cols, image.rows);
@@ -107,11 +109,15 @@ std::vector<FaceInferenceResults> FaceDetector::detect(const cv::Mat& image) {
         // Ignore faces whose bouding boxes do not fit entirely into the frame
         if (rectIntersection.area() != faceRect.area())
             continue;
-
-        tmp.faceDetectionConfidence = confidence;
-        tmp.faceBoundingBox = faceRect;
-        detectionResult.push_back(tmp);
+        
+        if(abs(x-center_x)<min_dist) {
+            tmp.faceDetectionConfidence = confidence;
+            tmp.faceBoundingBox = faceRect;
+        }
+        //detectionResult.push_back(tmp);
     }
+    if (tmp.faceDetectionConfidence != 0.0)
+        detectionResult.push_back(tmp);
 
     return detectionResult;
 }
