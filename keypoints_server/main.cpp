@@ -73,7 +73,7 @@ int main_png_s(int argc, char const *argv[])
             send(new_socket , msg_down.c_str() , msg_down.size() , 0 );
         } else if (!strncmp(rcv_msg, msg_infer.c_str(), 4)) {
             std::cout << "INFER" << std::endl;
-            int total=0;
+            //int total=0;
             //while((valread = recv(new_socket, img_enc, sizeof(img_enc), 0)) >0) {
             valread=1;
             auto tInferenceBegins = cv::getTickCount();
@@ -89,7 +89,7 @@ int main_png_s(int argc, char const *argv[])
             std::cout << (tInferenceEnds - tInferenceBegins) * 1000. / cv::getTickFrequency() << std::endl;
             cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );
             cv::imshow( "Display window", img );
-            char key = cv::waitKey(30);
+            //char key = cv::waitKey(30);
             send(new_socket , msg_down.c_str() , msg_down.size() , 0 );
             send(new_socket , &keypoints , sizeof(keypoints) , 0 );
         } else if (!strncmp(rcv_msg, msg_close.c_str(), 4)) {
@@ -134,9 +134,9 @@ void error(const char *msg)
 
 int main()
 {
-  int sockfd, newsockfd, portno, n, imgSize, bytes=0, IM_HEIGHT, IM_WIDTH;;
+  int sockfd, newsockfd, portno, imgSize, bytes=0; //, IM_HEIGHT, IM_WIDTH;;
   socklen_t clilen;
-  char buffer[256];
+  //char buffer[256];
   struct sockaddr_in serv_addr, cli_addr;
   cv::Mat img;
 
@@ -174,8 +174,8 @@ int main()
 
   while(running)
   {
-    IM_HEIGHT = FRAME_HEIGHT;
-    IM_WIDTH = FRAME_WIDTH;
+    //IM_HEIGHT = FRAME_HEIGHT;
+    //IM_WIDTH = FRAME_WIDTH;
     img = cv::Mat::zeros(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC3);
 
     imgSize = img.total()*img.elemSize(); std::cout << imgSize << std::endl;
@@ -187,14 +187,15 @@ int main()
 
     int ptr=0;
 
-    for(int i=0;i<img.rows;++i)
+    for(int i=0;i<img.rows;++i) {
       for(int j=0;j<img.cols;++j)
       {
         img.at<cv::Vec3b>(i,j) = cv::Vec3b(sockData[ptr+0],sockData[ptr+1],sockData[ptr+2]);
         ptr=ptr+3;
       }
-      auto tInferenceEnds = cv::getTickCount();
-      std::cout << (tInferenceEnds - tInferenceBegins) * 1000. / cv::getTickFrequency() << std::endl;
+    }
+    auto tInferenceEnds = cv::getTickCount();
+    std::cout << (tInferenceEnds - tInferenceBegins) * 1000. / cv::getTickFrequency() << std::endl;
 
     namedWindow( "Server", cv::WINDOW_AUTOSIZE );// Create a window for display.
     imshow( "Server", img );

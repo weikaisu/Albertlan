@@ -243,7 +243,9 @@ int main_ori(int argc, char *argv[]) {
 #include <iostream>
 #include <string>
 #include <iomanip>
-#define PORT 8080
+#define PORT 9090
+#define FRAME_W 640
+#define FRAME_H 480
 
 int main(int argc, char *argv[]) {
 
@@ -297,35 +299,6 @@ int main(int argc, char *argv[]) {
             return 0;
         }
 
-        slog::info << "Reading input" << slog::endl;
-        cv::VideoCapture cap;
-
-        if (!(FLAGS_i == "cam" ? cap.open(0) : cap.open(FLAGS_i))) {
-            throw std::logic_error("Cannot open input file or camera: " + FLAGS_i);
-        }
-
-        // Parse camera resolution parameter and set camera resolution
-        if (FLAGS_i == "cam" && FLAGS_res != "") {
-            auto xPos = FLAGS_res.find("x");
-            if (xPos == std::string::npos)
-                throw std::runtime_error("Incorrect -res parameter format, please use 'x' to separate width and height");
-            int frameWidth, frameHeight;
-            std::stringstream widthStream(FLAGS_res.substr(0, xPos));
-            widthStream >> frameWidth;
-            std::stringstream heightStream(FLAGS_res.substr(xPos + 1));
-            heightStream >> frameHeight;
-            cap.set(cv::CAP_PROP_FRAME_WIDTH, frameWidth);
-            cap.set(cv::CAP_PROP_FRAME_HEIGHT, frameHeight);
-        }
-
-        // read input (video) frame
-        #if 0
-        cv::Mat frame;
-        if (!cap.read(frame)) {
-            throw std::logic_error("Failed to get frame from cv::VideoCapture");
-        }
-        #endif
-
         bool flipImage = false;
         ResultsMarker resultsMarker(false, false, false, true);
 
@@ -362,9 +335,11 @@ int main(int argc, char *argv[]) {
 
         int delay = 1;
         std::string windowName = "Gaze estimation demo";
+        //namedWindow(windowName, cv::WINDOW_NORMAL);// Create a window for display.
         double overallTime = 0., inferenceTime = 0.;
-        cv::Size graphSize{static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH) / 4), 60};
-        Presenter presenter(FLAGS_u, static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT)) - graphSize.height - 10, graphSize);
+        cv::Size graphSize{FRAME_W/4, 60};
+        Presenter presenter(FLAGS_u, FRAME_W - graphSize.height - 10, graphSize);
+        
         auto tIterationBegins = cv::getTickCount();
 
         std::cout << "Waiting Message" << std::endl << std::flush;
@@ -376,31 +351,26 @@ int main(int argc, char *argv[]) {
             
             else if (!strncmp(rcv_msg, msg_infer.c_str(), 4)) {
                 std::cout << "INFER" << std::endl;
-                
-                #if 0
-                cv::Mat frame;
-                if (!cap.read(frame)) {
-                    throw std::logic_error("Failed to get frame from cv::VideoCapture");
-                }
-                #else
-                cv::Mat frame = cv::Mat::zeros(720, 1280, CV_8UC3);
+
+                cv::Mat frame = cv::Mat::zeros(FRAME_H, FRAME_W, CV_8UC3); // switch frame's width and height
                 int imgSize = frame.total()*frame.elemSize(); //std::cout << imgSize << std::endl;
                 uchar sockData[imgSize];
 
                 auto tInferenceBegins = cv::getTickCount();
-                for(int i=0;i<imgSize;i+=valread)
-                    if ((valread=recv(new_socket, sockData+i, imgSize-i,0))==-1) std::cout << "recv failed" << std::endl;
+                for(int i=0;i<imgSize;i+=valread) {
+                    if ((valread=recv(new_socket, sockData+i, imgSize-i,0))==-1) 
+                        std::cout << "recv failed" << std::endl;
+                }
 
+                //std::cout << "Recv Image" << std::endl;
                 int ptr=0;
-
                 for(int i=0;i<frame.rows;++i)
                     for(int j=0;j<frame.cols;++j) {
                         frame.at<cv::Vec3b>(i,j) = cv::Vec3b(sockData[ptr+0],sockData[ptr+1],sockData[ptr+2]);
                         ptr+=3;
                     }
                 auto tInferenceEnds = cv::getTickCount();
-                std::cout << (tInferenceEnds - tInferenceBegins) * 1000. / cv::getTickFrequency() << std::endl;
-                #endif
+                //std::cout << (tInferenceEnds - tInferenceBegins) * 1000. / cv::getTickFrequency() << std::endl;
 
                 if (flipImage)
                     cv::flip(frame, frame, 1);
@@ -447,10 +417,9 @@ int main(int argc, char *argv[]) {
                 for (auto const& inferenceResult : inferenceResults) {
                     resultsMarker.mark(frame, inferenceResult, res_data);
                 }
-                for(int i=0; i<51; i++)
-                    std::cout<< i << ":" << res_data.keypoints[i] << std::endl;
-                putTimingInfoOnFrame(frame, overallTimeAverager.getAveragedValue(),
-                                    inferenceTimeAverager.getAveragedValue());
+                //for(int i=0; i<50; i++)
+                    //std::cout<< i << ":" << res_data.keypoints[i] << std::endl;
+                putTimingInfoOnFrame(frame, overallTimeAverager.getAveragedValue(), inferenceTimeAverager.getAveragedValue());
                 cv::imshow(windowName, frame);
 
                 // Controls the information being displayed while demo runs
@@ -465,7 +434,7 @@ int main(int argc, char *argv[]) {
                 else
                     presenter.handleKey(key);
                 
-                std::cout << presenter.reportMeans() << '\n';
+                //std::cout << presenter.reportMeans() << '\n';
                 send(new_socket , msg_down.c_str() , msg_down.size() , 0 );
                 send(new_socket , &res_data.keypoints , sizeof(res_data.keypoints) , 0 ); }
             

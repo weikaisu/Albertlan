@@ -13,7 +13,7 @@ namespace gaze_estimation {
 
 struct ResultsData {
     //double keypoints[110] = {0};
-    int keypoints[110] = {0};
+    int keypoints[50] = {-1};
 };
 
 class ResultsMarker {

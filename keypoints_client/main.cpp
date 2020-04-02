@@ -59,6 +59,7 @@ int main_png_c(int argc, char const *argv[])
     // Send INFR message
     for(int times=1 ;times<=2; times++) {
         send(sock , msg_infer.c_str() , msg_infer.size() , 0 );
+        /*
         cv::Mat img = cv::imread("./ryan.bmp");
         std::vector<uchar> img_enc;
         imencode(".png", img, img_enc);
@@ -69,6 +70,7 @@ int main_png_c(int argc, char const *argv[])
             std::cout << "ERROR" << std::endl;
             return 0;
         }
+        */
         std::cout << "---------------------------------INFER(" << times << ")" << std::endl;
         valread = read( sock , keypoints, sizeof(keypoints));
         if(valread<=0) {
@@ -121,7 +123,7 @@ int main()
   int sockfd, portno, n, imgSize, IM_HEIGHT, IM_WIDTH;
   struct sockaddr_in serv_addr;
   struct hostent *server;
-  char buffer[256];
+  //char buffer[256];
   Mat cameraFeed;
 
   portno = PORT;

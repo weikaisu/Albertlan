@@ -151,6 +151,10 @@ void ResultsMarker::mark(cv::Mat& image,
     auto pitch = static_cast<double>(faceInferenceResults.headPoseAngles.y);
     auto roll = static_cast<double>(faceInferenceResults.headPoseAngles.z);
 
+    res_data.keypoints[0] = std::round(yaw);
+    res_data.keypoints[1] = std::round(pitch);
+    res_data.keypoints[2] = std::round(roll);
+
     auto sinY = std::sin(yaw * M_PI / 180.0);
     auto sinP = std::sin(pitch * M_PI / 180.0);
     auto sinR = std::sin(roll * M_PI / 180.0);
@@ -162,15 +166,6 @@ void ResultsMarker::mark(cv::Mat& image,
     auto axisLength = 0.4 * faceBoundingBoxWidth;
     auto xCenter = faceBoundingBox.x + faceBoundingBoxWidth / 2;
     auto yCenter = faceBoundingBox.y + faceBoundingBoxHeight / 2;
-
-    res_data.keypoints[36] = xCenter;
-    res_data.keypoints[37] = yCenter;
-    res_data.keypoints[38] = static_cast<int>(xCenter + axisLength * (cosR * cosY + sinY * sinP * sinR));
-    res_data.keypoints[39] = static_cast<int>(yCenter + axisLength * cosP * sinR);
-    res_data.keypoints[40] = static_cast<int>(xCenter + axisLength * (cosR * sinY * sinP + cosY * sinR));
-    res_data.keypoints[41] = static_cast<int>(yCenter - axisLength * cosP * cosR);
-    res_data.keypoints[42] = static_cast<int>(xCenter + axisLength * sinY * cosP);
-    res_data.keypoints[43] = static_cast<int>(yCenter + axisLength * sinP);
 
     if (showHeadPoseAxes) {
         // center to right
@@ -198,7 +193,7 @@ void ResultsMarker::mark(cv::Mat& image,
 
     
     int lmRadius = static_cast<int>(0.01 * faceBoundingBoxWidth + 1);
-    int i=0;
+    int i=11;
     for (auto const& point : faceInferenceResults.faceLandmarks) {
         if(i<=34) {
             res_data.keypoints[i]   = point.x;
@@ -207,10 +202,7 @@ void ResultsMarker::mark(cv::Mat& image,
         }
         if (showLandmarks)
             cv::circle(image, point, lmRadius, cv::Scalar(0, 255, 255), -1);
-    }
-    std::cout<< std::setprecision (17) << res_data.keypoints[0] << std::endl;
-    std::cout<< std::setprecision (17) << res_data.keypoints[1] << std::endl;
-    std::cout<< std::setprecision (17) << res_data.keypoints[2] << std::endl;
+    }    
 
     auto gazeVector = faceInferenceResults.gazeVector;
     double arrowLength = 0.4 * faceBoundingBoxWidth;
@@ -219,14 +211,14 @@ void ResultsMarker::mark(cv::Mat& image,
     gazeArrow.y = -gazeVector.y;
     gazeArrow = arrowLength * gazeArrow;
 
-    res_data.keypoints[44] = faceInferenceResults.leftEyeMidpoint.x;
-    res_data.keypoints[45] = faceInferenceResults.leftEyeMidpoint.y;
-    res_data.keypoints[46] = static_cast<int>((faceInferenceResults.leftEyeMidpoint + gazeArrow).x);
-    res_data.keypoints[47] = static_cast<int>((faceInferenceResults.leftEyeMidpoint + gazeArrow).y);
-    res_data.keypoints[48] = faceInferenceResults.rightEyeMidpoint.x;
-    res_data.keypoints[49] = faceInferenceResults.rightEyeMidpoint.y;
-    res_data.keypoints[50] = static_cast<int>((faceInferenceResults.rightEyeMidpoint + gazeArrow).x);
-    res_data.keypoints[51] = static_cast<int>((faceInferenceResults.rightEyeMidpoint + gazeArrow).y);
+    res_data.keypoints[3] = faceInferenceResults.leftEyeMidpoint.x;
+    res_data.keypoints[4] = faceInferenceResults.leftEyeMidpoint.y;
+    res_data.keypoints[5] = static_cast<int>((faceInferenceResults.leftEyeMidpoint + gazeArrow).x);
+    res_data.keypoints[6] = static_cast<int>((faceInferenceResults.leftEyeMidpoint + gazeArrow).y);
+    res_data.keypoints[7] = faceInferenceResults.rightEyeMidpoint.x;
+    res_data.keypoints[8] = faceInferenceResults.rightEyeMidpoint.y;
+    res_data.keypoints[9] = static_cast<int>((faceInferenceResults.rightEyeMidpoint + gazeArrow).x);
+    res_data.keypoints[10] = static_cast<int>((faceInferenceResults.rightEyeMidpoint + gazeArrow).y);
     
     if (showGaze) {
         // Draw eyes bounding boxes
